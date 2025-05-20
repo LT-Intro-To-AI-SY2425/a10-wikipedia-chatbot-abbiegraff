@@ -111,6 +111,53 @@ def get_birth_date(name: str) -> str:
 
     return match.group("birth")
 
+def get_everything(thing: str) -> str:
+    infobox_text = clean_text(get_first_infobox_text(get_page_html(thing)))
+    return infobox_text
+
+def get_scientific_name(entity_name: str) -> str:
+    """Gets the scientific name of an animal from its Wikipedia infobox.
+
+    Args:
+        entity_name: Name of the animal.
+
+    Returns:
+        Scientific name of the animal.
+    """
+    infobox_text = clean_text(get_first_infobox_text(get_page_html(entity_name)))
+
+    # Regex pattern to match scientific name in binomial nomenclature
+    pattern = r"Family:\s?(?P<family>\w*)"
+    error_text = "Page infobox has no scientific name information"
+    match = get_match(infobox_text, pattern, error_text)
+
+    family = match.group('family').strip()
+    return f"Scientific name: {family}"
+
+def get_domain(entity_name: str) -> str:
+    """Gets the conservation status of an animal from its Wikipedia infobox.
+
+    Args:
+        entity_name: Name of the animal.
+
+    Returns:
+        Conservation status of the animal (e.g., "Endangered", "Least Concern").
+    """
+    infobox_text = clean_text(get_first_infobox_text(get_page_html(entity_name)))
+
+    # Regex pattern to match conservation status, often found under "Conservation status"
+    pattern = r"Domain:\s?(?P<domain>\w*)"
+    error_text = "Page infobox has no domain information"
+    match = get_match(infobox_text, pattern, error_text)
+
+    domain = match.group('domain').strip()
+    return f"Domain: {domain}"
+
+        
+
+
+
+
 
 # below are a set of actions. Each takes a list argument and returns a list of answers
 # according to the action and the argument. It is important that each function returns a
@@ -140,6 +187,35 @@ def polar_radius(matches: List[str]) -> List[str]:
     """
     return [get_polar_radius(matches[0])]
 
+def everything(matches: List[str]) -> List[str]:
+    return [get_everything(matches[0])]
+
+def scientific_name(matches: List[str]) -> List[str]:
+    """Returns the scientific name of a given animal.
+
+    Args:
+        matches - match from pattern for animal to find scientific name 
+
+    Returns:
+        Scientific name of the animal
+    """
+    return [get_scientific_name(" ".join(matches))]
+
+def domain(matches: List[str]) -> List[str]:
+    """Returns the conservation status of a given animal.
+
+    Args:
+        matches - match from pattern for animal to find given conservation status
+
+    Returns:
+        Conservation status of animal
+    """
+    return [get_domain(" ".join(matches))]
+
+
+
+
+
 
 # dummy argument is ignored and doesn't matter
 def bye_action(dummy: List[str]) -> None:
@@ -156,6 +232,10 @@ Action = Callable[[List[str]], List[Any]]
 pa_list: List[Tuple[Pattern, Action]] = [
     ("when was % born".split(), birth_date),
     ("what is the polar radius of %".split(), polar_radius),
+    ("what is the scientific name of %".split(), scientific_name),
+    ("what is the domain of %".split(), domain),
+    ("tell me everything about %".split(), everything),
+
     (["bye"], bye_action),
 ]
 
@@ -184,7 +264,8 @@ def search_pa_list(src: List[str]) -> List[str]:
 def query_loop() -> None:
     """The simple query loop. The try/except structure is to catch Ctrl-C or Ctrl-D
     characters and exit gracefully"""
-    print("Welcome to the movie database!\n")
+    print("Welcome to the Wikipedia database!\n")
+
     while True:
         try:
             print()
